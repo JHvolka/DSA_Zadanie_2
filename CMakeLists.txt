@@ -3,7 +3,7 @@ project(Zadanie_2)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(Zadanie_2 main.cpp RB_TREE.h AvlTree.h HashRobin.h)
+add_executable(Zadanie_2 main.cpp RB_TREE.h AvlTree.h HashRobin.h HashSeparateChaining.h)
 
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)

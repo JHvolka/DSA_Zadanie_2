@@ -8,15 +8,14 @@
 #include <sstream>
 #include <array>
 #include <utility>
-#include <climits>
 #include <map>
-#include <fstream>
 #include <unordered_map>
 #include <string>
 
 #include "RB_TREE.h"
 #include "HashRobin.h"
 #include "AvlTree.h"
+#include "HashSeparateChaining.h"
 
 // Batch size = number of operations in single time measurement
 // AC = assignment compliant
@@ -72,9 +71,9 @@ public:
      */
     void stop() {
         m_End = clock_type::now();
-        if (measurement_in_progress != "")
-            durations.find(measurement_in_progress)->second.push_back(
-                    duration());
+        if (!measurement_in_progress.empty())
+            durations.find(measurement_in_progress)
+                    ->second.push_back(duration());
     }
 
     /**
@@ -89,7 +88,7 @@ public:
             unsigned long total = 0;
 
             // Get total time measured in measurement group
-            for(auto t : val){
+            for (auto t : val) {
                 total += t.count();
             }
 
@@ -152,7 +151,7 @@ public:
 
     ~Timer() {
         // Print data to file, if file was specified
-        if (file != "")
+        if (!file.empty())
             print_each(file);
     }
 
@@ -214,13 +213,13 @@ vector<size_t> generate_random_values(int count, bool unique_values = true) {
  * @tparam T Data structure on which benchmarking will be performed
  * @param timer For measuring and storing run durations
  * @param tested_func Function that will be timed
+ * @param insert_func Function used to fill up structure before search is tested
  * @param values List of values used when calling test_func
  * @param name Name of measurement. Will be stored in timer
  * @param count Number of iterations tested_func will be called
  * @param repeats Number of times, the whole test is to be repeated.
  *        Each time new measurement will be created
- * @param measuring_insert Used in assignment compliant measurements, to
- *        differentiate between insert and search
+ * @param measuring_insert Used to differentiate between insert and search.
  * @param batch_size Number of tested_func calls in one timed duration. Only
  *        in non assignment compliant measurements
  * @param assignment_compliant Set to true, if AC benchmark is required.
@@ -229,7 +228,9 @@ template<class T>
 void
 test(Timer<chrono::nanoseconds> &timer,
      function<void(T &, size_t)> &tested_func,
-     const vector<size_t> &values, const string& name, size_t count, int repeats,
+     function<void(T &, size_t)> &insert_func,
+     const vector<size_t> &values, const string &name, size_t count,
+     int repeats,
      bool measuring_insert = true, int batch_size = 1,
      bool assignment_compliant = true) {
 
@@ -241,6 +242,13 @@ test(Timer<chrono::nanoseconds> &timer,
             ss << name << " iter:" << r;
             timer.new_measurement(move(ss.str()));
 
+            // Fill data, if search is measured
+            if (!measuring_insert) {
+                for (size_t i = 0; i < count; ++i) {
+                    insert_func(structure, values.at(i));
+                }
+            }
+
             // Measure first batch runs
             timer.start();
             for (size_t i = 0; i < count; ++i) {
@@ -248,18 +256,25 @@ test(Timer<chrono::nanoseconds> &timer,
             }
             timer.stop();
 
-            // Measure 5% 25% more runs (different for search and insert)
+            // Measure 25% more runs if insert
             size_t count_bigger;
-            if (measuring_insert)
+            if (measuring_insert) {
                 count_bigger = (count * 125) / 100;
-            else
-                count_bigger = (count * 105) / 100;
 
-            timer.start();
-            for (int i = count; i < count_bigger; ++i) {
-                tested_func(structure, values.at(i));
+                timer.start();
+                for (size_t i = count; i < count_bigger; ++i) {
+                    tested_func(structure, values.at(i));
+                }
+                timer.stop();
             }
-            timer.stop();
+            // Measure 5% if search
+            else{
+                timer.start();
+                for (size_t i = 0; i < count; i+=20) {
+                    tested_func(structure, values.at(i));
+                }
+                timer.stop();
+            }
         }
 
     }
@@ -269,6 +284,13 @@ test(Timer<chrono::nanoseconds> &timer,
             stringstream ss;
             ss << name << "_" << r;
             timer.new_measurement(move(ss.str()));
+
+            // Fill data, if search is measured
+            if (!measuring_insert) {
+                for (size_t i = 0; i < count; ++i) {
+                    insert_func(structure, values.at(i));
+                }
+            }
 
             // Measure function call duration in batches
             for (size_t i = 0; i < count; ++i) {
@@ -319,12 +341,28 @@ int main() {
         tree.Find(val);
     };
 
-    // TODO Hash implementation taken from Github
+    // Hash implementation taken from Github
+    function<void(HashSC::HashTable &, size_t)> insert_HashSC = [](
+            HashSC::HashTable &table, size_t val) {
+        table.Insert(HashSC::Node(val, "a"));
+    };
+    function<void(HashSC::HashTable &, size_t)> search_HashSC = [](
+            HashSC::HashTable &table, size_t val) {
+        table.Search(val);
+    };
 
     // TODO AVL tree implementation taken from Github
+    function<void(AVLTree<size_t, size_t> &, size_t)> insert_AVLTree = [](
+            AVLTree<size_t, size_t> &tree, size_t val) {
+        tree.Insert(val);
+    };
+    function<void(AVLTree<size_t, size_t> &, size_t)> search_AVLTree = [](
+            AVLTree<size_t, size_t> &tree, size_t val) {
+        tree.find(val);
+    };
 
     // Run tests for all required operation counts
-    size_t test_counts[3] = {1000, 25000, 100000};
+    size_t test_counts[4] = {1000, 25000, 100000, 1000000};
     for (auto test_count : test_counts) {
 
         stringstream ss;
@@ -337,9 +375,10 @@ int main() {
 
         ss << "times_HashRobin_assignment_compliant_" << test_count
            << ".csv";
-        Timer timer_HashRobin_assignment_compliant(BATCH_SIZE_AC, cout,
-                                                   ss.str());
+        Timer timer_HashRobin_assignment_compliant
+                (BATCH_SIZE_AC, cout, ss.str());
         ss.str("");
+
 
         ss << "times_RBTree_" << test_count << ".csv";
         Timer timer_RBTree(BATCH_SIZE, cout, ss.str());
@@ -350,6 +389,28 @@ int main() {
         ss.str("");
 
 
+        ss << "times_HashSC_" << test_count << ".csv";
+        Timer timer_HashSC(BATCH_SIZE, cout, ss.str());
+        ss.str("");
+
+        ss << "times_HashSC_assignment_compliant_" << test_count
+           << ".csv";
+        Timer timer_HashSC_assignment_compliant
+                (BATCH_SIZE_AC, cout, ss.str());
+        ss.str("");
+
+
+        ss << "times_AVLTree_" << test_count << ".csv";
+        Timer timer_AVLTree(BATCH_SIZE, cout, ss.str());
+        ss.str("");
+
+        ss << "times_AVLTree_assignment_compliant_" << test_count
+           << ".csv";
+        Timer timer_AVLTree_assignment_compliant
+                (BATCH_SIZE_AC, cout, ss.str());
+        ss.str("");
+
+
         array<string, 8> descriptions = {"IR", "IO", "IR_AC", "IO_AC", "SR",
                                          "SO", "SR_AC", "SO_AC"};
         int desc_pos = 0;
@@ -357,43 +418,51 @@ int main() {
         // Tests for my implementation of hash table
         // Inserts
         test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, insert_HashRobin, values_random,
+                (timer_HashRobin, insert_HashRobin, insert_HashRobin,
+                 values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, true,
                  100, false);
 
         test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, insert_HashRobin, values_ordered,
+                (timer_HashRobin, insert_HashRobin, insert_HashRobin,
+                 values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, true,
                  100, false);
 
 
         test<HashRobin<size_t, size_t>>
                 (timer_HashRobin_assignment_compliant, insert_HashRobin,
+                 insert_HashRobin,
                  values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
 
         test<HashRobin<size_t, size_t>>
                 (timer_HashRobin_assignment_compliant, insert_HashRobin,
+                 insert_HashRobin,
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
         //Searches
         test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, search_HashRobin, values_random,
+                (timer_HashRobin, search_HashRobin, insert_HashRobin,
+                 values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, false,
                  100, false);
 
         test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, search_HashRobin, values_ordered,
+                (timer_HashRobin, search_HashRobin, insert_HashRobin,
+                 values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, false,
                  100, false);
 
         test<HashRobin<size_t, size_t>>
                 (timer_HashRobin_assignment_compliant, search_HashRobin,
+                 insert_HashRobin,
                  values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
 
         test<HashRobin<size_t, size_t>>
                 (timer_HashRobin_assignment_compliant, search_HashRobin,
+                 insert_HashRobin,
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
 
@@ -402,51 +471,156 @@ int main() {
         // Inserts
         desc_pos = 0;
         test<RB_TREE>
-                (timer_RBTree, insert_RBTree, values_random,
+                (timer_RBTree, insert_RBTree, insert_RBTree, values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, true,
                  100, false);
 
         test<RB_TREE>
-                (timer_RBTree, insert_RBTree, values_ordered,
+                (timer_RBTree, insert_RBTree, insert_RBTree, values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, true,
                  100, false);
 
         test<RB_TREE>
                 (timer_RBTree_assignment_compliant, insert_RBTree,
+                 insert_RBTree,
                  values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
 
         test<RB_TREE>
                 (timer_RBTree_assignment_compliant, insert_RBTree,
+                 insert_RBTree,
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
         //Searches
         test<RB_TREE>
-                (timer_RBTree, search_RBTree, values_random,
+                (timer_RBTree, search_RBTree, insert_RBTree, values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, false,
                  100, false);
 
         test<RB_TREE>
-                (timer_RBTree, search_RBTree, values_ordered,
+                (timer_RBTree, search_RBTree, insert_RBTree, values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE, false,
                  100, false);
 
         test<RB_TREE>
                 (timer_RBTree_assignment_compliant, search_RBTree,
+                 insert_RBTree,
                  values_random,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
 
         test<RB_TREE>
                 (timer_RBTree_assignment_compliant, search_RBTree,
+                 insert_RBTree,
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
 
 
+        // Tests for implementation of binary search tree taken from github
+        // Inserts
+        desc_pos = 0;
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, insert_AVLTree, insert_AVLTree, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, insert_AVLTree, insert_AVLTree, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree_assignment_compliant, insert_AVLTree,
+                 insert_AVLTree,
+                 values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree_assignment_compliant, insert_AVLTree,
+                 insert_AVLTree,
+                 values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
+        //Searches
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, search_AVLTree, insert_AVLTree, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, search_AVLTree, insert_AVLTree, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree_assignment_compliant, search_AVLTree,
+                 insert_AVLTree,
+                 values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree_assignment_compliant, search_AVLTree,
+                 insert_AVLTree,
+                 values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
+
+
+        // Tests for implementation of hash table taken from github
+        // Inserts
+        desc_pos = 0;
+        test<HashSC::HashTable>
+                (timer_HashSC, insert_HashSC, insert_HashSC, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<HashSC::HashTable>
+                (timer_HashSC, insert_HashSC, insert_HashSC, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<HashSC::HashTable>
+                (timer_HashSC_assignment_compliant, insert_HashSC,
+                 insert_HashSC,
+                 values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
+
+        test<HashSC::HashTable>
+                (timer_HashSC_assignment_compliant, insert_HashSC,
+                 insert_HashSC,
+                 values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
+        //Searches
+        test<HashSC::HashTable>
+                (timer_HashSC, search_HashSC, insert_HashSC, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<HashSC::HashTable>
+                (timer_HashSC, search_HashSC, insert_HashSC, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<HashSC::HashTable>
+                (timer_HashSC_assignment_compliant, search_HashSC,
+                 insert_HashSC,
+                 values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
+
+        test<HashSC::HashTable>
+                (timer_HashSC_assignment_compliant, search_HashSC,
+                 insert_HashSC,
+                 values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
+
+        timer_HashRobin_assignment_compliant.print();
         timer_HashRobin.print();
         cout << "--------------------\n";
-        timer_HashRobin_assignment_compliant.print();
-        cout << "--------------------\n";
+        timer_RBTree_assignment_compliant.print();
         timer_RBTree.print();
+        cout << "--------------------\n";
+        timer_AVLTree_assignment_compliant.print();
+        timer_AVLTree.print();
+        cout << "--------------------\n";
+        timer_HashSC_assignment_compliant.print();
+        timer_HashSC.print();
     }
 
     return 0;

@@ -421,7 +421,7 @@ bool Node<T1, T2>::AddRgt(Node<T1, T2> *rgt) {
 //							KC 2015-02-05
 ////////////////////////////////////////////////////////////////////////////////
 template<class T1, class T2>
-bool Node<T1, T2>::AddRgt(const T1 &rgtID, const T2 * const RgtRcd = NULL) {
+bool Node<T1, T2>::AddRgt(const T1 &rgtID, const T2 * const RgtRcd ) {          // EDIT removed redefinition of default argument
 
     Node *Tmp = new Node(rgtID, RgtRcd);
     Rgt = Tmp;
