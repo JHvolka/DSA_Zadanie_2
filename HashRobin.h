@@ -69,13 +69,14 @@ HashRobin<K, V>::HashRobin()
         : table(nullptr), size(INITIAL_SIZE), filled(0),
           resize_threshold((INITIAL_SIZE * LOAD_FACTOR) / 100),
           mask(size - 1),
-          seed(){
+          seed() {
     table = new typename HashRobin<K, V>::Node[INITIAL_SIZE];
     for (int i = 0; i < INITIAL_SIZE; ++i) {
         // SIZE_MAX is used as "unused" value
         table[i].hash = 0;
     }
 
+    // Create polynomial coefficients
     std::mt19937_64 rd(12345);
     std::uniform_int_distribution<size_t> dist(0, SIZE_MAX / 2);
     seed[0] = dist(rd);
@@ -99,12 +100,13 @@ V HashRobin<K, V>::Find(K key) {
 
 template<typename K, typename V>
 void HashRobin<K, V>::Insert(K key, V val) {
-    size_t hash = Hash(key);
 
     // Resize table if threshold is reached
-    if (++filled >= resize_threshold)
+    if (++filled >= resize_threshold) {
         Resize();
+    }
 
+    size_t hash = Hash(key);
     Insert_internal(hash, key, val);
 }
 

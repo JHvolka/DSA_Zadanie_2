@@ -13,14 +13,14 @@ using namespace std;
 // EDIT I put all code inside HashSC namespace to avoid collisions with other data structures
 namespace HashSC {
     struct Node {
-        int key;      // number
+        size_t key;      // number
         string value; // value
         Node *next;   // pointer to remember memory address of next node
 
         Node() : key(0), value(""), next(0) {};
 
-        // EDIT Int replaced by size_t
-        Node(int Key, string Value) : key(Key), value(Value), next(0) {};
+        // EDIT Int replaced by size_t everywhere
+        Node(size_t Key, string Value) : key(Key), value(Value), next(0) {};
 
         Node(Node const &data) : key(data.key), value(data.value),
                                  next(data.next) {};
@@ -28,36 +28,36 @@ namespace HashSC {
 
     class HashTable {
     private:
-        int size,     // size: size of table, count: number of data
+        size_t size,     // size: size of table, count: number of data
         count;    // count/size = load factor
         Node **table; // pointer to pointer, hash table
 
-        int hashFunction(int key); // Multiplication method
+        size_t hashFunction(size_t key); // Multiplication method
         void tableDoubling();
 
         void tableShrinking();
 
-        void reHashing(int size_orig);
+        void reHashing(size_t size_orig);
 
     public:
         // EDIT Empty constructor did not initialize anything, so I added initializer list and initialized table
         HashTable() :size(128),count(0) {
             table = new Node *[size]; // allocate the first demension of table
-            for (int i = 0; i < size; i++)
+            for (size_t i = 0; i < size; i++)
                 table[i] = 0; // ensure every slot points to NULL
         };
 
-        HashTable(int m) : size(m), count(0) {
+        HashTable(size_t m) : size(m), count(0) {
             table = new Node *[size]; // allocate the first demension of table
-            for (int i = 0; i < size; i++)
+            for (size_t i = 0; i < size; i++)
                 table[i] = 0; // ensure every slot points to NULL
         }
 
         ~HashTable();
 
         void Insert(Node data); // consider tableDoubling()
-        void Delete(int key);   // consider tableShrinking()
-        string Search(int key);
+        void Delete(size_t key);   // consider tableShrinking()
+        string Search(size_t key);
 
         void displayTable();
     };
@@ -68,7 +68,7 @@ namespace HashSC {
             tableDoubling(); // if n/m > 1, then double the size of table
         }
 
-        int index = hashFunction(data.key); // get index of slot
+        size_t index = hashFunction(data.key); // get index of slot
         Node *newNode = new Node(data);     // create new node to store data
 
         // push_front()
@@ -83,8 +83,8 @@ namespace HashSC {
         }
     }
 
-    void HashTable::Delete(int key) {
-        int index = hashFunction(key); // get index of slot
+    void HashTable::Delete(size_t key) {
+        size_t index = hashFunction(key); // get index of slot
         Node *current = table[index],  // use two pointer for traversal in list
         *previous = NULL;
 
@@ -117,8 +117,8 @@ namespace HashSC {
         }
     }
 
-    string HashTable::Search(int key) {
-        int index = hashFunction(key); // get index of slot
+    string HashTable::Search(size_t key) {
+        size_t index = hashFunction(key); // get index of slot
         Node *current = table[index];  // current points to the first node in list
 
         while (current != NULL) { // traversal in list
@@ -129,31 +129,31 @@ namespace HashSC {
         return "\nNo such data!";
     }
 
-    int HashTable::hashFunction(int key) {
+    size_t HashTable::hashFunction(size_t key) {
         // Multiplication method
         double A = 0.6180339887, frac = key * A - floor(key * A);
         return floor(this->size * frac);
     }
 
     void HashTable::tableDoubling() {
-        int size_orig = size; // size_orig represents the original size of table
+        size_t size_orig = size; // size_orig represents the original size of table
         size *= 2;            // double the size of table
         reHashing(size_orig); // create new table with new larger size
     }
 
     void HashTable::tableShrinking() {
-        int size_orig = size; // size_orig represents the original size of table
+        size_t size_orig = size; // size_orig represents the original size of table
         size /= 2;            // shrink the size of table
         reHashing(size_orig); // create new table with new smaller size
     }
 
-    void HashTable::reHashing(int size_orig) {
+    void HashTable::reHashing(size_t size_orig) {
         Node **newtable = new Node *[size]; // allocate memory for new table
-        for (int i = 0; i < size; i++) {                    // initializetion
+        for (size_t i = 0; i < size; i++) {                    // initializetion
             newtable[i] = 0; // ensure every node in slot points to NULL
         }
 
-        for (int i = 0;
+        for (size_t i = 0;
              i < size_orig; i++) { // visit every node in the original table
 
             Node *curr_orig = table[i], // curr_orig: current node in original table
@@ -164,7 +164,7 @@ namespace HashSC {
                 prev_orig = curr_orig->next; // curr_orig will be directly move to new table
                 // need prev_orig to keep pointer in original table
 
-                int index = hashFunction(
+                size_t index = hashFunction(
                         curr_orig->key); // get index of slot in new table
 
                 // push_front(), do not allocate new memory space for data
@@ -189,7 +189,7 @@ namespace HashSC {
     }
 
     HashTable::~HashTable() {
-        for (int i = 0; i <
+        for (size_t i = 0; i <
                         size; i++) {                             // visit every node in table and release the memory of each node
             Node *current = table[i]; // point *current to first node in list
             while (current != NULL) { // traversal in list
@@ -203,7 +203,7 @@ namespace HashSC {
     }
 
     void HashTable::displayTable() {
-        for (int i = 0; i < size; i++) { // visit every node in table
+        for (size_t i = 0; i < size; i++) { // visit every node in table
             cout << "Slot " << i << ": ";
             Node *current = table[i];
             while (current != NULL) {

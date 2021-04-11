@@ -267,10 +267,10 @@ test(Timer<chrono::nanoseconds> &timer,
                 }
                 timer.stop();
             }
-            // Measure 5% if search
-            else{
+                // Measure 5% if search
+            else {
                 timer.start();
-                for (size_t i = 0; i < count; i+=20) {
+                for (size_t i = 0; i < count; i += 20) {
                     tested_func(structure, values.at(i));
                 }
                 timer.stop();
@@ -351,7 +351,7 @@ int main() {
         table.Search(val);
     };
 
-    // TODO AVL tree implementation taken from Github
+    // AVL tree implementation taken from Github
     function<void(AVLTree<size_t, size_t> &, size_t)> insert_AVLTree = [](
             AVLTree<size_t, size_t> &tree, size_t val) {
         tree.Insert(val);
@@ -361,47 +361,27 @@ int main() {
         tree.find(val);
     };
 
-    // Run tests for all required operation counts
-    size_t test_counts[4] = {1000, 25000, 100000, 1000000};
+    // Run assignment required tests for all required operation counts
+    size_t test_counts[3] = {1000, 25000, 100000};
     for (auto test_count : test_counts) {
 
         stringstream ss;
 
         // Initialize timers for all tests
-        ss << "times_HashRobin_" << test_count << ".csv";
-        Timer timer_HashRobin(BATCH_SIZE, cout, ss.str());
-        ss.str("");
-
-
         ss << "times_HashRobin_assignment_compliant_" << test_count
            << ".csv";
         Timer timer_HashRobin_assignment_compliant
                 (BATCH_SIZE_AC, cout, ss.str());
         ss.str("");
 
-
-        ss << "times_RBTree_" << test_count << ".csv";
-        Timer timer_RBTree(BATCH_SIZE, cout, ss.str());
-        ss.str("");
-
         ss << "times_RBTree_assignment_compliant_" << test_count << ".csv";
         Timer timer_RBTree_assignment_compliant(BATCH_SIZE_AC, cout, ss.str());
-        ss.str("");
-
-
-        ss << "times_HashSC_" << test_count << ".csv";
-        Timer timer_HashSC(BATCH_SIZE, cout, ss.str());
         ss.str("");
 
         ss << "times_HashSC_assignment_compliant_" << test_count
            << ".csv";
         Timer timer_HashSC_assignment_compliant
                 (BATCH_SIZE_AC, cout, ss.str());
-        ss.str("");
-
-
-        ss << "times_AVLTree_" << test_count << ".csv";
-        Timer timer_AVLTree(BATCH_SIZE, cout, ss.str());
         ss.str("");
 
         ss << "times_AVLTree_assignment_compliant_" << test_count
@@ -411,25 +391,11 @@ int main() {
         ss.str("");
 
 
-        array<string, 8> descriptions = {"IR", "IO", "IR_AC", "IO_AC", "SR",
-                                         "SO", "SR_AC", "SO_AC"};
+        array<string, 8> descriptions = {"IR_AC", "IO_AC", "SR_AC", "SO_AC"};
         int desc_pos = 0;
 
         // Tests for my implementation of hash table
         // Inserts
-        test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, insert_HashRobin, insert_HashRobin,
-                 values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-        test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, insert_HashRobin, insert_HashRobin,
-                 values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-
         test<HashRobin<size_t, size_t>>
                 (timer_HashRobin_assignment_compliant, insert_HashRobin,
                  insert_HashRobin,
@@ -442,18 +408,6 @@ int main() {
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
         //Searches
-        test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, search_HashRobin, insert_HashRobin,
-                 values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
-        test<HashRobin<size_t, size_t>>
-                (timer_HashRobin, search_HashRobin, insert_HashRobin,
-                 values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
         test<HashRobin<size_t, size_t>>
                 (timer_HashRobin_assignment_compliant, search_HashRobin,
                  insert_HashRobin,
@@ -471,16 +425,6 @@ int main() {
         // Inserts
         desc_pos = 0;
         test<RB_TREE>
-                (timer_RBTree, insert_RBTree, insert_RBTree, values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-        test<RB_TREE>
-                (timer_RBTree, insert_RBTree, insert_RBTree, values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-        test<RB_TREE>
                 (timer_RBTree_assignment_compliant, insert_RBTree,
                  insert_RBTree,
                  values_random,
@@ -492,16 +436,6 @@ int main() {
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
         //Searches
-        test<RB_TREE>
-                (timer_RBTree, search_RBTree, insert_RBTree, values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
-        test<RB_TREE>
-                (timer_RBTree, search_RBTree, insert_RBTree, values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
         test<RB_TREE>
                 (timer_RBTree_assignment_compliant, search_RBTree,
                  insert_RBTree,
@@ -519,16 +453,6 @@ int main() {
         // Inserts
         desc_pos = 0;
         test<AVLTree<size_t, size_t>>
-                (timer_AVLTree, insert_AVLTree, insert_AVLTree, values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-        test<AVLTree<size_t, size_t>>
-                (timer_AVLTree, insert_AVLTree, insert_AVLTree, values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-        test<AVLTree<size_t, size_t>>
                 (timer_AVLTree_assignment_compliant, insert_AVLTree,
                  insert_AVLTree,
                  values_random,
@@ -540,16 +464,6 @@ int main() {
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
         //Searches
-        test<AVLTree<size_t, size_t>>
-                (timer_AVLTree, search_AVLTree, insert_AVLTree, values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
-        test<AVLTree<size_t, size_t>>
-                (timer_AVLTree, search_AVLTree, insert_AVLTree, values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
         test<AVLTree<size_t, size_t>>
                 (timer_AVLTree_assignment_compliant, search_AVLTree,
                  insert_AVLTree,
@@ -567,16 +481,6 @@ int main() {
         // Inserts
         desc_pos = 0;
         test<HashSC::HashTable>
-                (timer_HashSC, insert_HashSC, insert_HashSC, values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-        test<HashSC::HashTable>
-                (timer_HashSC, insert_HashSC, insert_HashSC, values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
-                 100, false);
-
-        test<HashSC::HashTable>
                 (timer_HashSC_assignment_compliant, insert_HashSC,
                  insert_HashSC,
                  values_random,
@@ -588,16 +492,6 @@ int main() {
                  values_ordered,
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, true);
         //Searches
-        test<HashSC::HashTable>
-                (timer_HashSC, search_HashSC, insert_HashSC, values_random,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
-        test<HashSC::HashTable>
-                (timer_HashSC, search_HashSC, insert_HashSC, values_ordered,
-                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
-                 100, false);
-
         test<HashSC::HashTable>
                 (timer_HashSC_assignment_compliant, search_HashSC,
                  insert_HashSC,
@@ -611,15 +505,149 @@ int main() {
                  descriptions[desc_pos++], test_count, BATCH_SIZE_AC, false);
 
         timer_HashRobin_assignment_compliant.print();
-        timer_HashRobin.print();
         cout << "--------------------\n";
         timer_RBTree_assignment_compliant.print();
-        timer_RBTree.print();
         cout << "--------------------\n";
         timer_AVLTree_assignment_compliant.print();
-        timer_AVLTree.print();
         cout << "--------------------\n";
         timer_HashSC_assignment_compliant.print();
+    }
+
+    // Run additional tests for all required operation counts
+    size_t test_counts_additional[1] = {1000000};
+    for (auto test_count : test_counts_additional) {
+
+        stringstream ss;
+
+        // Initialize timers for all tests
+        ss << "times_HashRobin_" << test_count << ".csv";
+        Timer timer_HashRobin(BATCH_SIZE, cout, ss.str());
+        ss.str("");
+
+
+        ss << "times_RBTree_" << test_count << ".csv";
+        Timer timer_RBTree(BATCH_SIZE, cout, ss.str());
+        ss.str("");
+
+
+        ss << "times_HashSC_" << test_count << ".csv";
+        Timer timer_HashSC(BATCH_SIZE, cout, ss.str());
+        ss.str("");
+
+
+        ss << "times_AVLTree_" << test_count << ".csv";
+        Timer timer_AVLTree(BATCH_SIZE, cout, ss.str());
+        ss.str("");
+
+
+        array<string, 4> descriptions = {"IR", "IO", "SR", "SO",};
+        int desc_pos = 0;
+
+        // Tests for my implementation of hash table
+        // Inserts
+        test<HashRobin<size_t, size_t>>
+                (timer_HashRobin, insert_HashRobin, insert_HashRobin,
+                 values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<HashRobin<size_t, size_t>>
+                (timer_HashRobin, insert_HashRobin, insert_HashRobin,
+                 values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+        //Searches
+        test<HashRobin<size_t, size_t>>
+                (timer_HashRobin, search_HashRobin, insert_HashRobin,
+                 values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<HashRobin<size_t, size_t>>
+                (timer_HashRobin, search_HashRobin, insert_HashRobin,
+                 values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+
+        // Tests for my implementation of binary search tree
+        // Inserts
+        desc_pos = 0;
+        test<RB_TREE>
+                (timer_RBTree, insert_RBTree, insert_RBTree, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<RB_TREE>
+                (timer_RBTree, insert_RBTree, insert_RBTree, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+        //Searches
+        test<RB_TREE>
+                (timer_RBTree, search_RBTree, insert_RBTree, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<RB_TREE>
+                (timer_RBTree, search_RBTree, insert_RBTree, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+
+        // Tests for implementation of binary search tree taken from github
+        // Inserts
+        desc_pos = 0;
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, insert_AVLTree, insert_AVLTree, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, insert_AVLTree, insert_AVLTree, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+        //Searches
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, search_AVLTree, insert_AVLTree, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<AVLTree<size_t, size_t>>
+                (timer_AVLTree, search_AVLTree, insert_AVLTree, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+
+        // Tests for implementation of hash table taken from github
+        // Inserts
+        desc_pos = 0;
+        test<HashSC::HashTable>
+                (timer_HashSC, insert_HashSC, insert_HashSC, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        test<HashSC::HashTable>
+                (timer_HashSC, insert_HashSC, insert_HashSC, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, true,
+                 100, false);
+
+        //Searches
+        test<HashSC::HashTable>
+                (timer_HashSC, search_HashSC, insert_HashSC, values_random,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        test<HashSC::HashTable>
+                (timer_HashSC, search_HashSC, insert_HashSC, values_ordered,
+                 descriptions[desc_pos++], test_count, BATCH_SIZE, false,
+                 100, false);
+
+        timer_HashRobin.print();
+        cout << "--------------------\n";
+        timer_RBTree.print();
+        cout << "--------------------\n";
+        timer_AVLTree.print();
+        cout << "--------------------\n";
         timer_HashSC.print();
     }
 
