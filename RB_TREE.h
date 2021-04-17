@@ -197,28 +197,46 @@ void RB_TREE::Insert(size_t key, void *data) {
     n_ins->color = RED;
 
     // Rebalance tree
+    // n_ins is red, so its paren can't be red
     while (n_ins != m_root &&
            n_ins->parent->color == RED) {
+        // If parent is left child. Branch depending on side n_ins' parent.
         if (n_ins->parent == n_ins->parent->parent->left) {
+            // tmp_y = uncle
             tmp_y = n_ins->parent->parent->right;
+
+            // case 1
+            // both parent and uncle are red, so by setting them to black and
+            // grandparent to red, violation is moved up the tree.
             if (tmp_y->color == RED) {
                 n_ins->parent->color = BLACK;
                 tmp_y->color = BLACK;
                 n_ins->parent->parent->color = RED;
                 n_ins = n_ins->parent->parent;
             }
+
             else {
+                // case 2
+                // If n_ins is right child, rotate left and transform it to
+                // case 3. Since n_ins and it's parent are red, no property
+                // violations change.
                 if (n_ins == n_ins->parent->right) {
                     n_ins = n_ins->parent;
                     rotate_left(n_ins);
                 }
+
+                // case 3
+                // n_ins and its parent are red. Grandparent must be black, so
+                // by switching parents and grandparents color and rotating
+                // grandparent to right, all properties are restored. While loop
+                // will not in another iteration, since parent is black.
                 n_ins->parent->color = BLACK;
                 n_ins->parent->parent->color = RED;
                 rotate_right(n_ins->parent->parent);
             }
         }
 
-
+        // Mirrored sides from if clause
         else {
             tmp_y = n_ins->parent->parent->left;
             if (tmp_y->color == RED) {

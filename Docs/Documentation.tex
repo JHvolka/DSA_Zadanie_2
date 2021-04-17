@@ -33,6 +33,8 @@
 \usepackage{ulem}
 \usepackage{color}
 \usepackage[bottom]{footmisc}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
 
 \pdfminorversion=7
 
@@ -142,17 +144,44 @@
 
     \subsection{Vlastné implementácie}\label{subsec:vlastne-implementacie}
 
-    V mojich implementáciách som vytvoril len funkcie potrebné na vloženie a vyľadanie dát v štruktúrach a na
+    V mojich implementáciách som vytvoril len funkcie potrebné na vloženie a vyhľadanie dát v štruktúrach a na
     uvoľnenie pamäti.
 
     \subsubsection{Binárny vyhľadávací strom}\label{subsubsec:cerveno-cierny-strom}
 
     Moja implementácia BVS je červeno-čierny strom.
 
+    \paragraph{Vkladanie:}
+    Funkcia vytvorí nový prvok, ktorý následne vloží do stromu ako list.
+    Nový prvok je označený ako červený.
+
+    Keďže nový prvok je červený, môže nastať porušenie vlastností červeno-čierneho stromu,
+    konkrétne faktu, že dva červené prvky nesmú byť za sebou.
+    Funkcia opakuje nasledujúce kroky, pokiaľ neplatia všetky vlastnosti červeno-čierneho stromu.
+    Jednotlivé situácie sú rozdelené symetricky podľa toho, či je rodiť pravé alebo ľavé dieťa.
+    Uvediem kroky pre prípad, keď je rodič ľavé dieťa:
+    \begin{enumerate}
+        \item Ak je aktuálny prvok koreň stromu, nastav ho na čierny.
+        Všetky vlastnosti platia a cyklus sa môže ukončiť.
+        \item Ak je rodič a rodičov súrodenec červený, nastav ich farbu na čierny a prarodiča na červeného.
+        Pokračuj od začiatku s prarodičom.
+        \item Ak aktuálny prvok je pravé dieťa, otoč ho doľava.
+        Keďže aktuálny prvok aj jeho rodič sú červený (ak by nebol červený, nenastalo by porušenie vlastností), rotácia
+        nezmení aktuálny stav porušených vlastností.
+        Pokračuj nasledujúcim krokom.
+        \item Keďže aktuálny prvok je červene ľavé dieťa, jeho rodič je tiež červený.
+        To znamená, že prarodič je čierny.
+        Nastav farbu rodiča na čiernu a prarodiča na červenú.
+        Otoč prarodiča doprava.
+        Všetky vlastnosti platia a cyklus sa môže ukončiť.
+    \end{enumerate}
+    Naviac, ak je aktuálny prvok koreň stromu, nastav ho na čierny.
+    Všetky vlastnosti platia a cyklus sa môže ukončiť.
+
     \subsubsection{Hash tabuľka}\label{subsubsec:hash-tabulka-s-retazenim}
 
     Implementoval som tabuľku s otvoreným reťazením.
-    Na hladanie pozície som použil lineárne skúšanie, s Robinhood hashing.
+    Na hľadanie pozície som použil lineárne skúšanie, s Robinhood hashing.
 
     Veľkosť tabuľky je vždy rovná $2^k$ aby som miesto funkcie modulo mohol použiť bitovú masku.
 
@@ -179,18 +208,51 @@
 
     \paragraph{Vyhľadávanie:}
     Podľa kľúča sa nájde ideálne miesto na ktorom sa môže prvok nachádzať.
-    Následne sa postupne porovnávajú klúče uložené na adrese od ideálneho miesta, pokedy sa nenájde zhodný kľúč, alebo prázne miesto.
+    Následne sa postupne porovnávajú kľúče uložené na adrese od ideálneho miesta, pokiaľ sa nenájde zhodný kľúč, alebo prázdne miesto.
     Ak sa nájde zhodný kľúč, funkcia vráti hodnotu.
 
     Funkcia sa vždy ukončí, keďže v tabuľke je vždy aspoň 10\% prázdnych miest.
 
+
     \section{Spôsob testovania}\label{sec:sposob-testovania}
 
+    Na testovanie som vytvoril jednu funkciu (šablónu, podľa typu skúšanej triedy).
+    Táto funkcia je rozdelená na dve časti.
 
+    Prvá časť (v kóde označovaná \textit{assignment\_compliant}) meria časy potrebné na vykonanie všetkých operácií za sebou, podľa
+    prílohy B v sekcii~\ref{sec:priloha-b-upresnenie-znenia-zadania-c-2}.
 
+    Druhá časť meria časy jednotlivých operácii v skupinách.
+    Pri testovaní som nastavil veľkosť skupiny na 100.
+
+    Pre jednotlivé testy sa po spustení programu vytvoria dve sady hodnôt na testovanie.
+    Jedna obsahuje zoradenú postupnosť čísel od 1, a druhá obsahuje náhodné čísla.
+    Postupnosť náhodných čísel je vytvorená z postupnosti unikátnych čísel, ktorá je následne zamiešaná.
+
+    Jednotlivé testované funkcie som obalil do labmda funkcií, líšiacich sa len typom štruktúry, aby som umožnil použitie
+    tej istej funkcie (šablóny) pre rôzne dátové štrkutúry s rôznymi názvami daných funkcií.
+
+    Na meranie časov vykonávania meraných funkcií som implementoval triedu Timer.
+    Táto trieda sa stará o meranie trvaní, ich ukladanie a výpis do csv (čiarkou oddelené hodnoty) súboru, ako aj sumárny výpis do konzoly.
+    Výsledné dáta sú spracované a zobrazené v nasledujúcej sekcii~\ref{sec:dosiahnute-vysledky}.
+    Na spracovanie dát som použil program Excel.
+    Spracovanie zahŕňa spriemerovanie časov behov jednotlivých meraní a výpočet priemerného času pre jednu operáciu.
+
+    Pri testovaní som použil kompilátor MSVC s \textbackslash{}Od možnosťou, aby som zabránil optimalizácii, ktorá by odstránila niektoré merané funkcie.
 
     \section{Dosiahnuté výsledky}\label{sec:dosiahnute-vysledky}
 
+    Oba vyhľadávacie stromy majú logaritmickú zložitosť pri vkladaní aj vyhľadávaní.
+    Moja implementácia je rýchlejšia pri oboch operáciách
+
+    Hash tabuľky majú obe očakávanú konštantnú časovú zložitosť pri oboch operáciách.
+    Obe implementácie sú podobne rýchle.
+    Prevzatá implementácia je pri mojom testovaní o málo rýchlejšia pri vyhľadávaní a pomalšia pri vkladaní, oproti mojej implementácii.
+
+    Obe hash tabuľky potrebujú veľa času na zväčšenie tabuľky.
+    Na grafoch hash tabuliek je to vidno ako veľké časové hodnoty, ktoré exponenciálne rastú s exponenciálne veľkými medzerami medzi sebou.
+    Keďže obe implementácie používajú geometrický nárast, obe implementácie majú amortizovanú konštantnú časovú zložitosť aj
+    pri rozširovaní tabuľky.
 
     \FloatBarrier
     \begin{table}[!htbp]
@@ -203,16 +265,16 @@
         \begin{tabular} {c|ccc|ccc||cc|cc}
             \toprule
             \multirow{3}{*}{\makecell{počet \\operácií}} & \multicolumn{6}{c||}{Insert v nano sekundách} & \multicolumn{4}{c}{Search v nanosekundách} \\
-            & \multicolumn{3}{c|}{Usporadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporadaný vstup}
+            & \multicolumn{3}{c|}{Usporiadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporiadaný vstup}
             & \multicolumn{2}{c}{Náhodný vstup}
             \\
             & Vytvorenie   & 1 prvok & 25\% prvkov   & Vytvorenie   & 1 prvok & 25\% prvkov   & 1 prvok & 5\% prvok
             & 1 prvok
             & 5\% prvok
             \\ \midrule
-            1000  & 102020  & 102,02 & 23500  & 130880  & 130,88 & 30300 & 2,00 & 220 & 2,04 & 240  \\
-            25000 & 2821320 & 112,85 & 764100 & 4653520 & 186,14 & 1382220 & 1,73 & 2300 & 1,73 & 2300 \\
-            100000 & 12198540 & 121,99 & 3225360 & 24287800 & 242,88 & 7234480 & 1,74 & 9580 & 1,78 & 11240 \\ \bottomrule
+            1000  &  158540 & 158,54 & 44480 & 179180 & 179,18 & 44740 & 44,5 & 2360 & 49,8 & 2500      \\
+            25000 &  5066760 & 202,6704 & 1284080 & 6718780 & 268,7512 & 1951980 & 69,4096 & 85900 & 65,7024 & 84000    \\
+            100000 & 20478520 & 204,7852 & 5510300 & 31509700 & 315,097 & 9203440 & 73,942 & 374380 & 64,7426 & 319620  \\ \bottomrule
         \end{tabular}
     \end{table}
 
@@ -226,17 +288,17 @@
         \begin{tabular} {c|ccc|ccc||cc|cc}
             \toprule
             \multirow{3}{*}{\makecell{počet \\operácií}} & \multicolumn{6}{c||}{Insert v nano sekundách} & \multicolumn{4}{c}{Search v nanosekundách} \\
-            & \multicolumn{3}{c|}{Usporadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporadaný vstup}
+            & \multicolumn{3}{c|}{Usporiadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporiadaný vstup}
             & \multicolumn{2}{c}{Náhodný vstup}
             \\
             & Vytvorenie   & 1 prvok
-            & 25\% prvkov   & Vytvorenie   & 1 prvok & 25\% prvkov    & 1 prvok  & 5\% prvok
+            & 25\% prvkov   & Vytvorenie   & 1 prvok & 25\% prvkov   & 1 prvok & 5\% prvok
             & 1 prvok
             & 5\% prvok
             \\ \midrule
-            1000  & 277700  & 277,70 & 70020 & 345700  & 345,70 & 93080  & 72,84 & 5880  & 129,06 5   & 520  \\
-            25000 & 6931900 & 277,28 & 1728040 & 9970020 & 398,80 & 3095240 & 102,18 & 182580 & 171,65   & 217120 \\
-            100000 & 29645620 & 296,46 & 7774480 & 48876980 & 488,77 & 14638820 & 105,96 & 1062760 & 226,53   & 1157400 \\ \bottomrule
+            1000  &  499940 & 499,94 & 131820 & 587840 & 587,84 & 178180 & 110,98 & 7700 & 156,26 & 7920    \\
+            25000 &  14712340 & 588,4936 & 3920340 & 20246200 & 809,848 & 5715780 & 141,1464 & 292500 & 271,8624 & 356140  \\
+            100000 & 61321760 & 613,2176 & 16368380 & 91178360 & 911,7836 & 25627980 & 149,7174 & 1318460 & 323,8394 & 1637800  \\\bottomrule
         \end{tabular}
     \end{table}
     \begin{table}[!htbp]
@@ -249,17 +311,17 @@
         \begin{tabular} {c|ccc|ccc||cc|cc}
             \toprule
             \multirow{3}{*}{\makecell{počet \\operácií}} & \multicolumn{6}{c||}{Insert v nano sekundách} & \multicolumn{4}{c}{Search v nanosekundách} \\
-            & \multicolumn{3}{c|}{Usporadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporadaný vstup}
+            & \multicolumn{3}{c|}{Usporiadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporiadaný vstup}
             & \multicolumn{2}{c}{Náhodný vstup}
             \\
-            & Vytvorenie & 1 prvok
-            & 25\% prvkov & Vytvorenie & 1 prvok & 25\% prvkov & 1 prvok & 5\% prvok
+            & Vytvorenie   & 1 prvok
+            & 25\% prvkov    & Vytvorenie   & 1 prvok & 25\% prvkov    & 1 prvok  & 5\% prvok
             & 1 prvok
             & 5\% prvok
             \\ \midrule
-            1000  & 87600  & 87,60 & 14520 & 97420  & 97,42 & 15600 & 1,82 & 200 1,90  & 180 \\
-            25000 & 2667160 & 106,69 & 1221960 & 2822820 & 112,91 & 1335580 & 1,73 & 2300 & 1,73 & 2260 \\
-            100000 & 12037880 & 120,38 & 6570740 & 12287760 & 122,88 & 6294620 & 1,97 & 10800 & 1,73 & 10300 \\ \bottomrule
+            1000  &  189700 & 189,7 & 28420 & 274800 & 274,8 & 33020 & 99,52 & 5100 & 99,66 & 4920 \\
+            25000 &  4855260 & 194,2104 & 2453420 & 5346160 & 213,8464 & 2579520 & 117,5616 & 155800 & 119,9 & 145400   \\
+            100000 & 20401300 & 204,013 & 10513760 & 22935280 & 229,3528 & 11803240 & 120,1428 & 584260 & 120,7554 & 614360 \\ \bottomrule
         \end{tabular}
     \end{table}
     \begin{table}[!htbp]
@@ -272,29 +334,25 @@
         \begin{tabular} {c|ccc|ccc||cc|cc}
             \toprule
             \multirow{3}{*}{\makecell{počet \\operácií}} & \multicolumn{6}{c||}{Insert v nano sekundách} & \multicolumn{4}{c}{Search v nanosekundách} \\
-            & \multicolumn{3}{c|}{Usporadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporadaný vstup}
+            & \multicolumn{3}{c|}{Usporiadaný vstup} & \multicolumn{3}{c||}{Náhodný vstup} & \multicolumn{2}{c|}{Usporiadaný vstup}
             & \multicolumn{2}{c}{Náhodný vstup}
             \\
-            & Vytvorenie & 1 prvok
-            & 25\% prvkov & Vytvorenie & 1 prvok & 25\% prvkov & 1 prvok & 5\% prvok
+            & Vytvorenie   & 1 prvok
+            & 25\% prvkov    & Vytvorenie   & 1 prvok & 25\% prvkov    & 1 prvok  & 5\% prvok
             & 1 prvok
             & 5\% prvok
             \\ \midrule
-            1000 & 111500,00 & 111,50 & 44740,00 & 135240,00 & 135,24 & 57360,00 & 24,26 & 1320,00 & 39,74
-            & 1840,00
-            \\
-            25000 & 3628540,00 & 145,14 & 760060,00 & 3510820,00 & 140,43 & 763840,00 & 29,87 & 52800,00
-            & 41,48
-            & 70040,00
-            \\
-            100000 & 12596060,00 & 125,96 & 2553640,00 & 14643660,00 & 146,44 & 2972440,00 & 31,58 & 232280,00 & 42,68 & 258120,00 \\ \bottomrule
+            1000  &      223280 & 223,28 & 88460 & 246440 & 246,44 & 91320 & 70,38 & 3600 & 105,66 & 5140                    \\
+            25000 &     6854120 & 232,69 & 1306560 & 6186660 & 246,42 & 1191400 & 71,51 & 101140 & 124,11 & 204140          \\
+            100000 &  23268520 & 274,16 & 4776280 & 24642300 & 247,47 & 4943840 & 77,08 & 475440 & 88,23 & 501760   \\ \bottomrule
         \end{tabular}
     \end{table}
 
     \FloatBarrier
 
-    Na grafoch sú červenou vyznačené časy pre náhodne generované čísla, a modrou pre postupnosť čísel
+    Obe implementácie vyhľadávacích stromov majú logaritmickú časovú zložitosť pri vkladaní.
 
+    Na grafoch sú červenou vyznačené časy pri použití náhodne generovaných čísel, a modrou pre postupnosť čísel.
 
     \FloatBarrier
 
@@ -331,13 +389,10 @@
 
     \FloatBarrier
 
-
     \newpage
+    \FloatBarrier
 
-    \includepdf[pages=-,offset= 0 -2cm, scale = .98,pagecommand=
-
-
-    \section{Príloha A - Zadanie č.2 Vyhľadávanie v dynamických množinách}\label{sec:priloha-a-zadanie-c-2-vyhladavanie-v-dynamickych-mnozinach}]{DSA_zadanie2.pdf}
+    \includepdf[pages=-,offset= 0 -2cm, scale = .98,pagecommand=\section{Príloha A - Zadanie č.2 Vyhľadávanie v dynamických množinách}\label{sec:priloha-a-zadanie-c-2-vyhladavanie-v-dynamickych-mnozinach}]{DSA_zadanie2.pdf}
 
     \newpage
 
